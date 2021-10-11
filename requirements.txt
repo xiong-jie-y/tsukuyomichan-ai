@@ -1,0 +1,6 @@
+SpeechRecognition
+ibm-watson
+sentence-transformers
+annoy
+PyAudio
+git+https://github.com/xiong-jie-y/tsukuyomichan-talksoft@add_setup
