@@ -40,11 +40,15 @@ Say somethingと表示されたタイミングで発言してください。
 本コンテンツは「シロワニさんのつくよみちゃんトークソフト」の音声合成モデルを使用しています。
 
 ■シロワニさんのつくよみちゃんトークソフト
+
 https://shirowanisan.com/tyc-talksoft
+
 © shirowanisan
 
 「シロワニさんのつくよみちゃんトークソフト」の音声合成モデルは、フリー素材キャラクター「つくよみちゃん」が無料公開している音声データから作られています。
 
 ■つくよみちゃんコーパス（CV.夢前黎）
+
 https://tyc.rei-yumesaki.net/material/corpus/
+
 © Rei Yumesaki
