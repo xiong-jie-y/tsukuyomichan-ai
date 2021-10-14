@@ -19,6 +19,7 @@ import pyaudio
 import time
 from collections import deque
 
+import scipy
 import onnxruntime
 
 from utils.file import get_model_file_from_gdrive
@@ -34,9 +35,19 @@ def class_names_from_csv(class_map_csv_text):
 
     return class_names
 
+def ensure_sample_rate(original_sample_rate, waveform,
+                       desired_sample_rate=16000):
+    """Resample waveform if required."""
+    if original_sample_rate != desired_sample_rate:
+        desired_length = int(round(float(len(waveform)) /
+                                    original_sample_rate * desired_sample_rate))
+        waveform = scipy.signal.resample(waveform, desired_length)
+    return desired_sample_rate, waveform
+
 import datetime
 
 from scipy.io.wavfile import write
+from scipy.io import wavfile
 
 class HumanVoiceDetector:
     def __init__(self):
@@ -52,7 +63,11 @@ class HumanVoiceDetector:
 
         frame_len = int(16000 * 0.1)
 
+        # sample_rate, wav_data = wavfile.read("ashitanotenki.wav", 'rb')
+        # sample_rate, wav_data = ensure_sample_rate(sample_rate, wav_data)
+
         p = pyaudio.PyAudio()
+        
         stream = p.open(format=pyaudio.paInt16,
                         channels=1,
                         rate=16000,
@@ -60,21 +75,31 @@ class HumanVoiceDetector:
                         frames_per_buffer=frame_len)
 
         buffers = deque()
-    
+        left_list = []
+
         providers = ['CPUExecutionProvider']
 
+        # stream.write(wav_data)
 
         session = onnxruntime.InferenceSession(
             get_model_file_from_gdrive("yamnet.onnx", "https://drive.google.com/uc?id=1u7V15wRp3_gcUdXPzm9WtJy51ENpCqEC"), 
             providers=providers)
 
+        # previous_any_output_is_speek = False
+
+        found_speech = False
+        speech_term = None
         while True:
             data = stream.read(frame_len, exception_on_overflow=False)
             frame_data = librosa.util.buf_to_float(data, n_bytes=2, dtype=np.int16)
 
             buffers.append(frame_data)
-            if len(buffers) > 9:
-                buffers.popleft()
+            if len(buffers) > 3:
+
+                if found_speech:
+                    left_list.append(buffers.popleft())
+                else:
+                    buffers.popleft()
 
                 this_frame_data = np.concatenate(buffers)
 
@@ -92,9 +117,12 @@ class HumanVoiceDetector:
                 if class_name == "Speech":
                     print("aa")
                     # buffers.clear()
-                    
+                    found_speech = True
                     # write('output.wav', 16000, this_frame_data)
+                elif found_speech and class_name != "Speech":
+                    speech_term = np.concatenate(left_list + list(buffers))
                     break
+
                 # if class_name != "Silence":
                 #     buffers.clear()
                 #     write(f"sounds/{class_name}_{now_str}.wav", 16000, this_frame_data)                    
@@ -115,7 +143,7 @@ class HumanVoiceDetector:
         stream.close()
         p.terminate()
 
-        return this_frame_data
+        return speech_term
 
 if __name__ == "__main__":
     voice_detector = HumanVoiceDetector()

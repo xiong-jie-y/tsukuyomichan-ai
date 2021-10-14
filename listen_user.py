@@ -38,7 +38,7 @@ speech2text = Speech2Text(
         device="cuda"  # CPU で認識を行う場合は省略
     )
 
-trigger_words = ["ねぇ", "あ"]
+trigger_words = ["ねぇ", "あ", "つくよみちゃん", "助けて", "困った"]
 
 while True:
     wave = voice_detector.wait_for_human_voice()
