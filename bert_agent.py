@@ -19,17 +19,17 @@ def get_nlp():
     )
 
 class EmbeddingBasedReplyAgent:
-    def __init__(self, conversation_data_dir):
+    def __init__(self, conversation_data_dir, model):
         self.conversation_data_dir = conversation_data_dir
         if os.path.exists(self.conversation_data_dir):
             self.load()
+        self.model = model
 
     def is_ready(self):
         return os.path.exists(self.conversation_data_dir)
 
     def load(self):
         print("Loading conversation data and model.")
-        self.model = SentenceTransformer("paraphrase-multilingual-mpnet-base-v2")
 
         self.u = AnnoyIndex(768, 'angular')
         self.u.load(os.path.join(self.conversation_data_dir, "index.ann"))
@@ -38,7 +38,6 @@ class EmbeddingBasedReplyAgent:
         print("Everything has been loaded.")
 
     def ingest_csv(self, path_to_conv_csv):
-        model = SentenceTransformer("paraphrase-multilingual-mpnet-base-v2")
         os.makedirs(self.conversation_data_dir, exist_ok=True)
 
         shutil.copy(path_to_conv_csv, os.path.join(
@@ -51,7 +50,7 @@ class EmbeddingBasedReplyAgent:
         conversation_data = []
 
         for bob_talk, alice_reply in conversation_examples:
-            embedding = model.encode(bob_talk)
+            embedding = self.model.encode(bob_talk)
             # import IPython; IPython.embed()
             conversation_data.append(dict(
                 embedding=embedding.tolist(),
