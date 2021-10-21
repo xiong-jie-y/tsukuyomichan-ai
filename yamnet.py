@@ -95,7 +95,6 @@ class HumanVoiceDetector:
         # stream.write(wav_data)
 
         session = onnxruntime.InferenceSession(
-            # "tflite_from_saved_model/model_float32.onnx", 
             get_model_file_from_gdrive("yamnet.onnx", "https://drive.google.com/uc?id=1u7V15wRp3_gcUdXPzm9WtJy51ENpCqEC"), 
             providers=providers)
 
@@ -112,7 +111,7 @@ class HumanVoiceDetector:
             # print("mean", np.mean(inference_times))
             # print("std", np.std(inference_times))
             buffers.append(frame_data)
-            if len(buffers) > 5:
+            if len(buffers) > 10:
 
                 if found_speech:
                     left_list.append(buffers.popleft())
@@ -127,7 +126,7 @@ class HumanVoiceDetector:
                 input_name = session.get_inputs()[0].name  
                 input_wave = this_frame_data.astype(np.float32)
                 s = time.time()
-                outputs = session.run([], {input_name: input_wave})[0]
+                outputs = session.run([], {input_name: input_wave})[0][0]
                 # scores, embeddings, spectrogram = self.model(this_frame_data)
                 # outputs = scores
                 class_name = self.class_names[np.argmax(outputs)]

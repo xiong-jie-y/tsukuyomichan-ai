@@ -1,9 +1,13 @@
+import abc
+from asyncio.queues import QueueEmpty
 import json
 import os
+import threading
 import time
 
 import numpy as np
 from sentence_transformers import SentenceTransformer
+from onnx_sentence_transformers import ONNXSentenceTransformer
 import simpleaudio as sa
 import speech_recognition as sr
 import yaml
@@ -18,7 +22,7 @@ import librosa
 
 from espnet_model_zoo.downloader import ModelDownloader
 from espnet2.bin.asr_inference import Speech2Text
-
+import random
 
 class TsukuyomichanAgent:
     MAX_WAV_VALUE = 32768.0
@@ -29,15 +33,26 @@ class TsukuyomichanAgent:
         self.speech = sr.Microphone(sample_rate=16000)
         self.talksoft = TsukuyomichanTalksoft(model_version='v.1.2.0')
         self.voice_detector = HumanVoiceDetector()
-        self.sentence_transformer = SentenceTransformer("paraphrase-multilingual-mpnet-base-v2")
+
+        use_many_cpu_as_possible = False
+        if use_many_cpu_as_possible:
+            self.sentence_transformer = ONNXSentenceTransformer()
+        else:
+            # self.sentence_transformer = SentenceTransformer("paraphrase-multilingual-mpnet-base-v2")
+            self.sentence_transformer = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
 
         d = ModelDownloader()
+        aaa = d.download_and_unpack("kan-bayashi/csj_asr_train_asr_transformer_raw_char_sp_valid.acc.ave")
+        print(aaa)
         self.speech2text = Speech2Text(
-                **d.download_and_unpack("kan-bayashi/csj_asr_train_asr_transformer_raw_char_sp_valid.acc.ave"),
+                **aaa,
                 device="cuda"
         )
-
-    def speak(self, reply, seed=1):
+        
+    def speak(self, reply, seed=None):
+        if seed is None:
+            seed = random.randint(0,1000)
+        print(f"Speaking {reply}")
         wav = self.talksoft.generate_voice(reply, seed)
         wav = wav * self.MAX_WAV_VALUE
         wav = wav.astype(np.int16)
@@ -71,7 +86,7 @@ class TsukuyomichanAgent:
         distances = [np.linalg.norm(user_embedding - self.sentence_transformer.encode(sentence)) for sentence in sentences]
         min_index = np.argmin(distances)
 
-        MAX_ACCEPTABLE_DISTANCE = 0.6
+        MAX_ACCEPTABLE_DISTANCE = 10
         if distances[min_index] < MAX_ACCEPTABLE_DISTANCE:
             return sentences[min_index]
 
@@ -85,18 +100,35 @@ class TsukuyomichanAgent:
 import inspect
 import importlib
 
+import queue
+
 agent = TsukuyomichanAgent()
 conversations = []
 
 module = importlib.import_module("conversations.basic_conversations")
+
 for _, obj in inspect.getmembers(module):
     if inspect.isclass(obj) and inspect.getmodule(obj) == module:
-        conversations.append(obj(agent))
+        if abc.ABC not in obj.__bases__:
+            conversations.append(obj(agent))
+
+queue_obj = queue.Queue()
+
+def get_sound_events():
+    while True:
+        event = agent.listen_voice_event()
+        queue_obj.put_nowait(event)
+
+threading.Thread(target=get_sound_events, daemon=True).start()
 
 while True:
-    event = agent.listen_voice_event()
+    event = None
+    try:
+        event = queue_obj.get_nowait()
+    except queue.Empty:
+        pass
 
     for conversation in conversations:
-        if conversation.react_to(event):
+        if (event is not None and conversation.react_to(event)) or conversation.fire():
             conversation.start(event, agent)
             break
