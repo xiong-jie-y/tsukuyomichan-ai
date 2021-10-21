@@ -89,6 +89,7 @@ class WakeUserUpTask(Conversation):
 
             if user_reply == "起きる。":
                 agent.speak("えらいです！")
+                return
             elif user_reply == "まだ寝る。":
                 agent.speak("こら、早く起きてください。")
             else:
