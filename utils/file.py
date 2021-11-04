@@ -36,6 +36,6 @@ def get_model_file_from_gdrive(name, url):
     filepath = os.path.join(MODEL_PATH_ROOT_, name)
     if not os.path.exists(filepath):
         os.makedirs(MODEL_PATH_ROOT_, exist_ok=True)
-        gdown.download(url, filepath)
+        gdown.download(url, filepath, quiet=False)
 
     return filepath
