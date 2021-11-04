@@ -362,7 +362,9 @@ class TsukuyomichanVisualizer:
         
         self.nlp = spacy.load('ja_ginza_electra')
 
-        self.emotion_analyzer = onnxruntime.InferenceSession("sentiment.onnx", providers = ['CPUExecutionProvider'])
+        self.emotion_analyzer = onnxruntime.InferenceSession(
+            get_model_file_from_gdrive("sentiment.onnx", "https://drive.google.com/uc?id=1ij9WEObAUJir60qpR1RERlB4-ewiPFVZ"), 
+            providers = ['CPUExecutionProvider'])
         
         self._sp = spm.SentencePieceProcessor()
         self._sp.load("sp.model")
