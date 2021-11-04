@@ -7,3 +7,6 @@ espnet_model_zoo
 tensorflow_hub
 PyAudio
 progressbar2
+
+emoji
+ginza
