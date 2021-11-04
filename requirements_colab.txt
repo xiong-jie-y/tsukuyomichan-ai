@@ -4,7 +4,6 @@ annoy
 PyAudio
 git+https://github.com/xiong-jie-y/tsukuyomichan-talksoft@add_setup
 espnet_model_zoo
-tensorflow
 tensorflow_hub
 PyAudio
 progressbar2
