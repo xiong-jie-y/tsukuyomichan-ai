@@ -1,0 +1,6 @@
+sentence-transformers
+git+https://github.com/xiong-jie-y/tsukuyomichan-talksoft@add_setup
+espnet_model_zoo
+progressbar2
+emoji
+ginza
