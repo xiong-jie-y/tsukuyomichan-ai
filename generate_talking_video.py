@@ -6,7 +6,7 @@ from agent_display import TsukuyomichanVisualizer
 def generate_video(output_path, text):
     import re
 
-    manuscript = [s for s in manuscript.split("\n") if s.strip() != ""]
+    manuscript = [s for s in text.split("\n") if s.strip() != ""]
     for i in range(0, len(manuscript)):
         if re.match(r"[0-9\.]+", manuscript[i]):
             manuscript[i] = float(manuscript[i])

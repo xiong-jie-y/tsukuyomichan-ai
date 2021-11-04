@@ -21,6 +21,9 @@
 #     1.0
 # ]
 
+from generate_talking_video import generate_video
+
+
 manuscript = """
 Talking Head Anime 2とは、一枚のキャラクターの顔画像のみを用いてキャラクターの口や目や眉毛を動かせる技術です。
 Githubでオープンソースで公開されています。
@@ -40,3 +43,5 @@ ONNX化したモデルでは、消費ビデオメモリ量が数百から1GB増�
 ORT化などさらなる最適化をかけた場合は実行速度が低下しました。
 これ以上の速度改善には今の所成功していません。
 """
+
+generate_video("test.mp4", manuscript)

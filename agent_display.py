@@ -21,6 +21,8 @@ import ginza
 import time
 
 import simpleaudio as sa
+
+from utils.file import get_model_file_from_gdrive
 # play_obj = sa.play_buffer(wav, 1, 2, fs)
 
 class BlinkController:
@@ -202,7 +204,7 @@ class RealESRGANUpscaler:
         model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=6, num_grow_ch=32, scale=4)
         self.upsampler = RealESRGANer(
             scale=4,
-            model_path="RealESRGAN_x4plus_anime_6B.pth",
+            model_path=get_model_file_from_gdrive("RealESRGAN_x4plus_anime_6B.pth", "https://drive.google.com/uc?id=1cExySdxIOh0mw7XK_P_LZiijDKMx9m-p"),
             model=model,
             tile=0,
             tile_pad=10,
@@ -264,7 +266,7 @@ class TsukuyomichanVisualizationGenerator:
         if upscale:
             self.upscaler = upscale_method()
 
-        self.torch_input_image = extract_pytorch_image_from_PIL_image(extract_PIL_image_from_filelike("neautral_face.png")).to(self.device)
+        self.torch_input_image = extract_pytorch_image_from_PIL_image(extract_PIL_image_from_filelike("aaaaa.png")).to(self.device)
 
     def saying_something(self):
         return self.saying_something_
