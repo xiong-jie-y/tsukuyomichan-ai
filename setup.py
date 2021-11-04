@@ -6,5 +6,5 @@ setuptools.setup(
     name='tsukuyomichan_ai',
     version=__version__,
     packages=setuptools.find_packages(),
-    py_modules=["generate_talking_video", "agent_display"]
+    py_modules=["generate_talking_video", "agent_display", "english_to_kana"], 
 )
