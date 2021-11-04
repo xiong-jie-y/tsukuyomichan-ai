@@ -1,12 +1,9 @@
 SpeechRecognition
 sentence-transformers
 annoy
-PyAudio
 git+https://github.com/xiong-jie-y/tsukuyomichan-talksoft@add_setup
 espnet_model_zoo
 tensorflow_hub
-PyAudio
 progressbar2
-
 emoji
 ginza
