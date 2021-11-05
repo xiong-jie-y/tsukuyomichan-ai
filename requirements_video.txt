@@ -3,4 +3,9 @@ git+https://github.com/xiong-jie-y/tsukuyomichan-talksoft@add_setup
 espnet_model_zoo
 progressbar2
 emoji
+spacy[cuda110]
 ginza
+ja-ginza-electra
+ja-ginza
+onnxruntime
+basicsr

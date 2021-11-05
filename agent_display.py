@@ -266,7 +266,7 @@ class TsukuyomichanVisualizationGenerator:
         if upscale:
             self.upscaler = upscale_method()
 
-        self.torch_input_image = extract_pytorch_image_from_PIL_image(extract_PIL_image_from_filelike("neautral_FACE.png")).to(self.device)
+        self.torch_input_image = extract_pytorch_image_from_PIL_image(extract_PIL_image_from_filelike("neautral_face.png")).to(self.device)
 
     def saying_something(self):
         return self.saying_something_
@@ -381,10 +381,12 @@ class TsukuyomichanVisualizer:
             "github": "ギットハブ",
             "FastSRGAN": "ファストエスアールガン",
             "GAN": "ガン",
-            "ESRGAN": "リアルイーエスアールガン",
+            "ESRGAN": "イーエスアールガン",
             "Real": "リアル",
             "Bicubic": "バイキュービック",
-            "Realtime": "リアルタイム"
+            "Realtime": "リアルタイム",
+            "GB": "ギガバイト",
+            "ORT": "オーアールティー"
         }
 
         self.english_to_kana_dictionary = {}
