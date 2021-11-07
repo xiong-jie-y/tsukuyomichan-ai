@@ -11,3 +11,4 @@ ja-ginza
 onnxruntime
 basicsr
 click
+simpletransformers
