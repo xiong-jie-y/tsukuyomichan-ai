@@ -266,7 +266,7 @@ class TsukuyomichanVisualizationGenerator:
         if upscale:
             self.upscaler = upscale_method()
 
-        self.torch_input_image = extract_pytorch_image_from_PIL_image(extract_PIL_image_from_filelike("neautral_face.png")).to(self.device)
+        self.torch_input_image = extract_pytorch_image_from_PIL_image(extract_PIL_image_from_filelike("neutral_face.png")).to(self.device)
 
     def saying_something(self):
         return self.saying_something_
@@ -279,7 +279,13 @@ class TsukuyomichanVisualizationGenerator:
             self.pose[0, self.pose_parameters.get_parameter_index("eye_happy_wink_right")] = 1.0
             self.pose[0, self.pose_parameters.get_parameter_index("eye_happy_wink_left")] = 1.0
             self.do_blink = False
-        if emotion_label == "sad" or emotion_label == "angry":
+        elif emotion_label is None:
+            return
+        else:
+            if emotion_label == "awate":
+                self.do_blink = False
+                self.pose[0, self.pose_parameters.get_parameter_index("eye_happy_wink_right")] = 0.0
+                self.pose[0, self.pose_parameters.get_parameter_index("eye_happy_wink_left")] = 0.0
             self.torch_input_image = extract_pytorch_image_from_PIL_image(extract_PIL_image_from_filelike(f"{emotion_label}_face.png")).to(self.device)
 
     def generate(self):
@@ -291,7 +297,7 @@ class TsukuyomichanVisualizationGenerator:
         self.body_controller.control(self.pose, self.pose_parameters)
         finished = self.mouth_shape_controller.control(self.pose, self.pose_parameters)
         if finished:
-            self.torch_input_image = extract_pytorch_image_from_PIL_image(extract_PIL_image_from_filelike(f"neautral_face.png")).to(self.device)
+            self.torch_input_image = extract_pytorch_image_from_PIL_image(extract_PIL_image_from_filelike(f"neutral_face.png")).to(self.device)
             self.pose[0, self.pose_parameters.get_parameter_index("eye_happy_wink_right")] = 0.0
             self.pose[0, self.pose_parameters.get_parameter_index("eye_happy_wink_left")] = 0.0
 
@@ -343,13 +349,78 @@ class Speaker():
 
 from english_to_kana import EnglishToKana
 
+class SentimentJaFeelingEstimator:
+    def __init__(self):
+        self.emotion_analyzer = onnxruntime.InferenceSession(
+            get_model_file_from_gdrive("sentiment.onnx", "https://drive.google.com/uc?id=1ij9WEObAUJir60qpR1RERlB4-ewiPFVZ"), 
+            providers = ['CPUExecutionProvider'])
+        
+        self._sp = spm.SentencePieceProcessor()
+        self._sp.load("sp.model")
+        self._maxlen = 281
+        self.emotion_label = [
+            "happy", "sad", "angry", "disgust", "surprise", "fear"
+        ]
+    def get_feeling(self, sentence):
+        word_ids = self._sp.EncodeAsIds(sentence)
+        padded = np.pad(word_ids, (self._maxlen - len(word_ids), 0), 'constant', constant_values=(0, 0))
+        emotions = self.emotion_analyzer.run([], {"embedding_input": [padded]})[0][0]
+        emotion_index = np.argmax(emotions)
+        emotion_label = self.emotion_label[emotion_index] if emotions[emotion_index] > 0.9 else None
+
+        print(emotions)
+
+        return emotion_label
+
+
+from simpletransformers.classification import ClassificationModel, ClassificationArgs
+
+class FeelingJaFeelingEstimator:
+    CLASS_NAMES = [
+        'angry_face', 'crying_face', 'face_with_crossed-out_eyes', 'face_with_open_mouth', 
+        'flushed_face', 'grinning_face_with_smiling_eyes', 'loudly_crying_face', 'pouting_face', 
+        'slightly_smiling_face', 'smiling_face_with_smiling_eyes', 'sparkles', 'tired_face']
+
+    feeling_face_map = {
+        'angry_face': 'angry',
+        'crying_face': 'sad',
+        "face_with_crossed-out_eyes": "awate",
+        "face_with_open_mouth": "neutral",
+        "flushed_face": "embarrassed",
+        "grinning_face_with_smiling_eyes": "happy",
+        "loudly_crying_face": "cry",
+        "pouting_face": "angry",
+        "slightly_smiling_face": "neutral",
+        "smiling_face_with_smiling_eyes": "happy",
+        "sparkles": "sparkles",
+        "tired_face": "awate"
+    }
+
+    def __init__(self):
+        from huggingface_hub import snapshot_download
+        path = snapshot_download(repo_id="xiongjie/face-expression-ja")
+        model_args = ClassificationArgs()
+        model_args.onnx = True
+        self.model_onnx = ClassificationModel(
+            'auto',
+            path,
+            use_cuda=False,
+            args=model_args
+        )
+
+    def get_feeling(self, sentence):
+        class_id = self.model_onnx.predict([sentence])[0][0]
+        return self.feeling_face_map[self.CLASS_NAMES[class_id]]
 
 class TsukuyomichanVisualizer:
     # load the example file included in the ESPnet repository
     MAX_WAV_VALUE = 32768.0
     fs = 24000
 
-    def __init__(self, talksoft, clock=WallClock(), wav_output=Speaker(), background_color=None):
+    def __init__(self, 
+        talksoft, clock=WallClock(), wav_output=Speaker(), background_color=None,
+        feeling_estimator=FeelingJaFeelingEstimator
+    ):
         d = ModelDownloader()
         aaa = d.download_and_unpack("kan-bayashi/csj_asr_train_asr_transformer_raw_char_sp_valid.acc.ave")
         # sentence = "今日の天気はとても良い。"
@@ -362,21 +433,11 @@ class TsukuyomichanVisualizer:
         
         self.nlp = spacy.load('ja_ginza_electra')
 
-        self.emotion_analyzer = onnxruntime.InferenceSession(
-            get_model_file_from_gdrive("sentiment.onnx", "https://drive.google.com/uc?id=1ij9WEObAUJir60qpR1RERlB4-ewiPFVZ"), 
-            providers = ['CPUExecutionProvider'])
-        
-        self._sp = spm.SentencePieceProcessor()
-        self._sp.load("sp.model")
-        self._maxlen = 281
-        self.emotion_label = [
-            "happy", "sad", "angry", "disgust", "surprise", "fear"
-        ]
         self.clock = clock
         self.wav_output = wav_output
 
         self.visualization_generator = TsukuyomichanVisualizationGenerator(self.clock, background_color)
-
+        self.feeling_estimator = feeling_estimator()
         base_dictionary = {
             "github": "ギットハブ",
             "FastSRGAN": "ファストエスアールガン",
@@ -386,7 +447,10 @@ class TsukuyomichanVisualizer:
             "Bicubic": "バイキュービック",
             "Realtime": "リアルタイム",
             "GB": "ギガバイト",
-            "ORT": "オーアールティー"
+            "ORT": "オーアールティー",
+            "1GB": "イチギガバイト",
+            "3D": "スリーディー",
+            "Live2D": "ライブツーディー"
         }
 
         self.english_to_kana_dictionary = {}
@@ -410,12 +474,7 @@ class TsukuyomichanVisualizer:
             sentence = re.sub(r":.+", "", sentence)
             sentence = sentence.strip()
 
-            word_ids = self._sp.EncodeAsIds(sentence)
-            padded = np.pad(word_ids, (self._maxlen - len(word_ids), 0), 'constant', constant_values=(0, 0))
-            emotions = self.emotion_analyzer.run([], {"embedding_input": [padded]})[0][0]
-            emotion_index = np.argmax(emotions)
-            emotion_label = self.emotion_label[emotion_index] if emotions[emotion_index] > 0.9 else None
-            # import IPython; IPython.embed()
+            emotion_label = self.feeling_estimator.get_feeling(sentence )
 
             alphabet_replaced_sentence = ""
             doc = self.nlp(sentence)
@@ -434,7 +493,6 @@ class TsukuyomichanVisualizer:
                         alphabet_replaced_sentence += token.orth_
 
             print(alphabet_replaced_sentence)
-            print(emotions)
 
             sentence = alphabet_replaced_sentence
 
@@ -452,6 +510,7 @@ class TsukuyomichanVisualizer:
 
             sentence = "".join(uttrs)
             s = time.time()
+            print(f"audio is generated from {alphabet_replaced_sentence}")
             if len(alphabet_replaced_sentence) > 200:
                 all_wavs = []
                 for partial_sentence in alphabet_replaced_sentence.split("。"):
@@ -468,7 +527,9 @@ class TsukuyomichanVisualizer:
                 print(time.time() - s)
 
 
-            print(uttrs, readings, types)
+            for uttr, reading in zip(uttrs, readings):
+                print(uttr, reading)
+
             segments = None
             try:
                 segments = self.aligner(wav, uttrs)

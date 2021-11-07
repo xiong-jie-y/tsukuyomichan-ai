@@ -10,3 +10,4 @@ ja-ginza-electra
 ja-ginza
 onnxruntime
 basicsr
+click
