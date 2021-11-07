@@ -3,6 +3,7 @@ git+https://github.com/xiong-jie-y/tsukuyomichan-talksoft@add_setup
 espnet_model_zoo
 progressbar2
 emoji
+spacy-transformers==1.0.6
 spacy[cuda110]
 ginza
 ja-ginza-electra
