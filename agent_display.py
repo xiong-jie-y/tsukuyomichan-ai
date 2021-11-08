@@ -452,6 +452,11 @@ class TsukuyomichanVisualizer:
             "3D": "スリーディー",
             "Live2D": "ライブツーディー"
         }
+        for line in open("english_to_kana_dictionary.txt"):
+            english, kana = line[:-1].split(",")
+            english = english.strip()
+            kana = kana.strip()
+            base_dictionary[english] = kana
 
         self.english_to_kana_dictionary = {}
         # TODO: decide it is necessary.
@@ -481,9 +486,11 @@ class TsukuyomichanVisualizer:
             for sent in doc.sents:
                 for token in sent:
                     if re.match(r"[a-zA-Z]+", token.orth_):
-                        yomi = ginza.reading_form(token)
+                        yomi = token.orth_
                         if re.match(r"[a-zA-Z]+", yomi) and yomi.lower() in self.english_to_kana_dictionary:
                             yomi = self.english_to_kana_dictionary[yomi.lower()]
+                        if re.match(r"[a-zA-Z]+", yomi):
+                            yomi = ginza.reading_form(token)
                         another_yomi = self.english2kana.convert(yomi.lower())
                         if re.match(r"[a-zA-Z]+", yomi) and another_yomi is not None:
                             yomi = another_yomi

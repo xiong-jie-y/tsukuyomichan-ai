@@ -8,7 +8,7 @@ def generate_video(output_path, text, subtitle_path=None):
 
     manuscript = [s for s in text.split("\n") if s.strip() != ""]
     for i in range(0, len(manuscript)):
-        if re.match(r"[0-9\.]+", manuscript[i]):
+        if re.match(r"^[0-9\.]+$", manuscript[i]):
             manuscript[i] = float(manuscript[i])
 
     import tempfile
